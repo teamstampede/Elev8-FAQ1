@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Elev8 Schools — Smart FAQ System</title>
+<style>
+:root {
+  --navy: #0D1B4B;
+  --gold: #C9A84C;
+  --gold-light: #FDF3DC;
+  --white: #FFFFFF;
+  --g50: #F8F9FA;
+  --g100: #F2F3F5;
+  --g200: #E5E7EB;
+  --g400: #9CA3AF;
+  --g600: #4B5563;
+  --g900: #111827;
+  --blue-50: #EFF6FF;
+  --blue-700: #1D4ED8;
+  --blue-900: #1E3A8A;
+  --amber-50: #FFFBEB;
+  --amber-800: #92400E;
+  --green-50: #F0FDF4;
+  --green-700: #15803D;
+  --red-50: #FEF2F2;
+  --red-700: #B91C1C;
+  --rc: #4F46E5; --cc: #0891B2; --tr: #B45309; --ss: #059669; --sp: #7C3AED; --cx: #BE185D;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--g100);color:var(--g900);min-height:100vh}
+
+/* HEADER */
+.hdr{background:var(--navy);position:sticky;top:0;z-index:100;box-shadow:0 4px 20px rgba(0,0,0,.35)}
+.hdr-brand{display:flex;align-items:center;gap:14px;padding:12px 20px;border-bottom:3px solid var(--gold)}
+.e8{width:46px;height:46px;background:var(--gold);border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:20px;color:var(--navy);flex-shrink:0}
+.bt h1{font-size:17px;font-weight:800;color:var(--white);letter-spacing:.5px;text-transform:uppercase}
+.bt p{font-size:11px;color:rgba(255,255,255,.5);margin-top:1px}
+.tabs{display:flex;padding:0 20px;gap:4px;background:rgba(0,0,0,.2)}
+.tab{padding:10px 18px;font-size:13px;font-weight:700;color:rgba(255,255,255,.55);border:none;background:none;cursor:pointer;border-bottom:3px solid transparent;transition:all .2s;white-space:nowrap}
+.tab.on{color:var(--gold);border-bottom-color:var(--gold)}
+.tab:hover:not(.on){color:rgba(255,255,255,.8)}
+.sync-bar{display:flex;align-items:center;gap:8px;padding:6px 20px;background:rgba(0,0,0,.15);font-size:11px}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:var(--g400)}
+.sync-dot.ok{background:#22C55E}
+.sync-dot.loading{background:var(--gold);animation:pulse 1s infinite}
+.sync-dot.err{background:var(--red-700)}
+.sync-txt{color:rgba(255,255,255,.55)}
+.sync-btn{margin-left:auto;padding:4px 12px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:6px;color:rgba(255,255,255,.7);font-size:11px;cursor:pointer;font-weight:600}
+.sync-btn:hover{background:rgba(255,255,255,.2)}
+
+/* VIEWS */
+.view{display:none;min-height:calc(100vh - 125px)}
+.view.on{display:block}
+
+/* ── SETUP BANNER ── */
+.setup-banner{background:#FFF3CD;border:2px solid var(--gold);border-radius:12px;padding:20px 24px;margin:20px;display:none}
+.setup-banner.show{display:block}
+.setup-banner h3{font-size:15px;font-weight:800;color:var(--navy);margin-bottom:8px}
+.setup-banner p{font-size:13px;color:var(--g600);line-height:1.6;margin-bottom:10px}
+.setup-banner code{background:rgba(0,0,0,.08);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:12px}
+.setup-steps{list-style:none;counter-reset:step}
+.setup-steps li{counter-increment:step;display:flex;gap:10px;margin-bottom:8px;font-size:13px;color:var(--g600)}
+.setup-steps li::before{content:counter(step);width:22px;height:22px;background:var(--navy);color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;margin-top:1px}
+.dismiss-btn{padding:7px 16px;background:var(--navy);color:white;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer}
+
+/* FAQ TOOLBAR */
+.toolbar{background:var(--white);border-bottom:1px solid var(--g200);padding:12px 20px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.srch{flex:1;min-width:240px;position:relative}
+.srch input{width:100%;padding:10px 36px 10px 40px;border:2px solid var(--g200);border-radius:10px;font-size:14px;outline:none;transition:border .2s;background:var(--g50)}
+.srch input:focus{border-color:var(--gold);background:var(--white)}
+.si{position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:16px;opacity:.4}
+.sc{position:absolute;right:12px;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;font-size:16px;opacity:.4;display:none}
+.sc.on{display:block}
+.pills{display:flex;gap:6px;flex-wrap:wrap}
+.pill{padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;border:2px solid transparent;transition:all .15s;white-space:nowrap;opacity:.4}
+.pill.on{opacity:1}
+.pill-all{background:var(--gold);color:var(--navy)}
+.pill-all.on{opacity:1}
+
+/* FAQ BODY */
+.faq-body{display:flex;max-width:1200px;margin:0 auto}
+.sbar{width:230px;flex-shrink:0;padding:14px 0;position:sticky;top:125px;height:calc(100vh - 125px);overflow-y:auto}
+.sg h4{font-size:10px;font-weight:800;color:var(--g400);text-transform:uppercase;letter-spacing:1px;padding:8px 16px 4px}
+.sl{display:block;padding:7px 16px;font-size:12px;color:var(--g600);cursor:pointer;border-left:3px solid transparent;transition:all .15s;line-height:1.4}
+.sl:hover{background:var(--gold-light);border-left-color:var(--gold);color:var(--navy)}
+.sdot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:7px;vertical-align:middle}
+
+.fmain{flex:1;padding:18px 18px 18px 14px}
+.fsec{margin-bottom:26px}
+.fsh{display:flex;align-items:center;gap:10px;padding-bottom:8px;border-bottom:2px solid var(--gold);margin-bottom:12px}
+.dlabel{font-size:11px;font-weight:800;color:var(--white);padding:3px 10px;border-radius:12px}
+.fsh h2{font-size:16px;font-weight:800;color:var(--navy)}
+.fqc{font-size:11px;color:var(--g400);margin-left:auto}
+
+.fcard{background:var(--white);border:1px solid var(--g200);border-radius:10px;margin-bottom:10px;overflow:hidden;transition:box-shadow .2s}
+.fcard:hover{box-shadow:0 3px 12px rgba(0,0,0,.07)}
+.fcard.hide{display:none}
+.fq{display:flex;align-items:flex-start;gap:10px;padding:14px 16px;cursor:pointer;user-select:none}
+.qi{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:var(--white);flex-shrink:0;margin-top:1px}
+.qb{flex:1}
+.qb strong{font-size:13.5px;color:var(--navy);line-height:1.5;display:block}
+.qtags{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px}
+.qtag{font-size:10px;padding:2px 7px;border-radius:8px;background:var(--g100);color:var(--g600)}
+.qtag.hit{background:#FEF08A;color:#713F12}
+.qchev{font-size:14px;color:var(--g400);flex-shrink:0;margin-top:3px;transition:transform .2s}
+.fcard.open .qchev{transform:rotate(180deg)}
+.fans{display:none;padding:0 16px 14px}
+.fcard.open .fans{display:block}
+.ap{border-radius:8px;padding:12px 14px;margin-bottom:8px}
+.ap.fam{background:var(--blue-50);border-left:4px solid var(--blue-700)}
+.ap.stf{background:var(--amber-50);border-left:4px solid var(--gold)}
+.alb{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;margin-bottom:5px}
+.alb.fam{color:var(--blue-700)}
+.alb.stf{color:var(--amber-800)}
+.at{font-size:13px;line-height:1.7}
+.at.fam{color:var(--blue-900)}
+.at.stf{color:var(--amber-800)}
+.nbadge{display:inline-block;margin-left:8px;font-size:9px;background:var(--cx);color:white;padding:2px 6px;border-radius:8px;font-weight:700;vertical-align:middle}
+.no-r{text-align:center;padding:50px;display:none}
+.no-r.on{display:block}
+.no-r h3{font-size:18px;color:var(--navy);margin-bottom:6px}
+.no-r p{font-size:13px;color:var(--g400)}
+
+/* AI VIEW */
+.ai-inner{max-width:780px;margin:0 auto;padding:24px 20px}
+.ai-hero{background:var(--navy);border-radius:16px;padding:28px;margin-bottom:20px}
+.ai-hero h2{font-size:22px;font-weight:800;color:var(--gold);margin-bottom:6px}
+.ai-hero p{font-size:13px;color:rgba(255,255,255,.75);line-height:1.6}
+.ai-hero .tip{font-size:12px;color:rgba(255,255,255,.5);margin-top:10px;background:rgba(255,255,255,.07);padding:8px 12px;border-radius:8px;border-left:3px solid var(--gold)}
+.ai-row{display:flex;gap:10px;margin-bottom:20px}
+.ai-row input{flex:1;padding:14px 16px;border:2px solid var(--g200);border-radius:12px;font-size:14px;outline:none;transition:border .2s}
+.ai-row input:focus{border-color:var(--gold)}
+.ai-btn{padding:14px 22px;background:var(--gold);color:var(--navy);border:none;border-radius:12px;font-size:14px;font-weight:800;cursor:pointer;white-space:nowrap}
+.ai-btn:disabled{opacity:.5;cursor:not-allowed}
+.ai-resp{background:var(--white);border:1px solid var(--g200);border-radius:12px;overflow:hidden;margin-bottom:16px}
+.ai-rh{padding:12px 16px;background:var(--navy);display:flex;align-items:center;gap:8px}
+.ai-rh span{font-size:13px;font-weight:700;color:var(--white)}
+.ai-rb{padding:16px}
+.ai-fb{background:var(--blue-50);border-left:4px solid var(--blue-700);border-radius:8px;padding:12px 14px;margin-bottom:10px}
+.ai-sb{background:var(--amber-50);border-left:4px solid var(--gold);border-radius:8px;padding:12px 14px}
+.bl{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;margin-bottom:5px}
+.bl.f{color:var(--blue-700)}.bl.s{color:var(--amber-800)}
+.bt2{font-size:13px;line-height:1.7}
+.bt2.f{color:var(--blue-900)}.bt2.s{color:var(--amber-800)}
+.ai-sr{display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--g200);background:var(--g50)}
+.svb{padding:8px 16px;background:var(--navy);color:var(--white);border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer}
+.discb{padding:8px 16px;background:var(--g200);color:var(--g600);border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer}
+.dots{display:none;padding:20px;text-align:center}
+.dots.on{display:block}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--gold);margin:0 3px;animation:bounce .9s infinite}
+.dot:nth-child(2){animation-delay:.15s}.dot:nth-child(3){animation-delay:.3s}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* ADD VIEW */
+.add-inner{max-width:700px;margin:0 auto;padding:24px 20px}
+.afc{background:var(--white);border:1px solid var(--g200);border-radius:14px;padding:28px}
+.afc h2{font-size:20px;font-weight:800;color:var(--navy);margin-bottom:6px}
+.afc>p{font-size:13px;color:var(--g400);margin-bottom:24px}
+.ff{margin-bottom:18px}
+.ff label{display:block;font-size:12px;font-weight:700;color:var(--navy);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
+.ff input,.ff select,.ff textarea{width:100%;padding:10px 14px;border:2px solid var(--g200);border-radius:8px;font-size:13px;outline:none;font-family:inherit;transition:border .2s}
+.ff input:focus,.ff select:focus,.ff textarea:focus{border-color:var(--gold)}
+.ff textarea{resize:vertical;min-height:90px}
+.fr{display:flex;gap:14px}
+.fr .ff{flex:1}
+.asub{width:100%;padding:14px;background:var(--navy);color:var(--white);border:none;border-radius:10px;font-size:14px;font-weight:800;cursor:pointer;margin-top:8px}
+.asub:hover{opacity:.88}
+.toast{display:none;background:var(--green-50);border:1px solid var(--green-700);border-radius:10px;padding:14px 18px;margin-top:14px;color:var(--green-700);font-size:13px;font-weight:600}
+.toast.on{display:block}
+.err-toast{display:none;background:var(--red-50);border:1px solid var(--red-700);border-radius:10px;padding:14px 18px;margin-top:14px;color:var(--red-700);font-size:13px;font-weight:600}
+.err-toast.on{display:block}
+
+/* MANAGE VIEW */
+.mg-inner{max-width:960px;margin:0 auto;padding:24px 20px}
+.mg-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px}
+.mg-hdr h2{font-size:18px;font-weight:800;color:var(--navy)}
+.mg-btns{display:flex;gap:8px}
+.exp-btn{padding:8px 16px;background:var(--gold);color:var(--navy);border:none;border-radius:8px;font-size:12px;font-weight:800;cursor:pointer}
+.mg-table{background:var(--white);border:1px solid var(--g200);border-radius:12px;overflow:hidden}
+.mgr{display:grid;grid-template-columns:1fr 130px 140px 80px;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--g100);font-size:12px}
+.mgr.hd{background:var(--navy);font-weight:700;color:var(--white);font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+.mgr:last-child{border-bottom:none}
+.mgr:not(.hd):hover{background:var(--g50)}
+.del-btn{padding:4px 10px;background:var(--red-50);color:var(--red-700);border:1px solid #FECACA;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer}
+.cchip{background:var(--cx);color:white;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700}
+.bchip{background:var(--g200);color:var(--g600);padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700}
+
+/* SETUP VIEW */
+.setup-inner{max-width:760px;margin:0 auto;padding:24px 20px}
+.setup-card{background:var(--white);border:1px solid var(--g200);border-radius:14px;padding:32px}
+.setup-card h2{font-size:22px;font-weight:800;color:var(--navy);margin-bottom:8px}
+.setup-card>p{font-size:14px;color:var(--g600);line-height:1.7;margin-bottom:28px}
+.step-block{border:1px solid var(--g200);border-radius:10px;padding:20px;margin-bottom:16px}
+.step-num{display:inline-block;width:28px;height:28px;background:var(--navy);color:var(--gold);border-radius:50%;text-align:center;line-height:28px;font-size:13px;font-weight:800;margin-bottom:10px}
+.step-block h3{font-size:15px;font-weight:800;color:var(--navy);margin-bottom:6px}
+.step-block p{font-size:13px;color:var(--g600);line-height:1.6;margin-bottom:10px}
+.step-block code{display:block;background:var(--g100);padding:10px 14px;border-radius:8px;font-family:monospace;font-size:12px;color:var(--navy);margin:8px 0;word-break:break-all}
+.copy-btn{padding:6px 14px;background:var(--gold);color:var(--navy);border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;margin-top:4px}
+.cfg-form{background:var(--gold-light);border:2px solid var(--gold);border-radius:10px;padding:20px;margin-bottom:16px}
+.cfg-form h3{font-size:15px;font-weight:800;color:var(--navy);margin-bottom:14px}
+.cfg-row{display:flex;gap:10px;align-items:flex-end}
+.cfg-row .ff{flex:1;margin-bottom:0}
+.save-cfg{padding:10px 20px;background:var(--navy);color:var(--white);border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
+.cfg-status{margin-top:10px;font-size:12px;color:var(--green-700);font-weight:600;display:none}
+.cfg-status.on{display:block}
+
+.scroll-top{position:fixed;bottom:22px;right:22px;width:42px;height:42px;background:var(--navy);color:var(--gold);border:none;border-radius:50%;font-size:18px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.25);opacity:0;transition:opacity .3s;z-index:200}
+.scroll-top.vis{opacity:1}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="hdr-brand">
+    <div class="e8">E8</div>
+    <div class="bt">
+      <h1>Elev8 Schools — Smart FAQ System</h1>
+      <p>All Departments &bull; AI-Powered &bull; Live Google Sheets Sync &bull; Staff Access Only &bull; July 2026</p>
+    </div>
+  </div>
+  <div class="tabs">
+    <button class="tab on" onclick="showView('faq')">🔍 FAQ Search</button>
+    <button class="tab" onclick="showView('ai')">🤖 Ask AI</button>
+    <button class="tab" onclick="showView('add')">➕ Add Question</button>
+    <button class="tab" onclick="showView('manage')">⚙️ Manage</button>
+    <button class="tab" onclick="showView('setup')">🔧 Setup</button>
+  </div>
+  <div class="sync-bar">
+    <div class="sync-dot" id="syncDot"></div>
+    <span class="sync-txt" id="syncTxt">Not configured — see Setup tab</span>
+    <button class="sync-btn" onclick="syncSheet()">↻ Sync Now</button>
+  </div>
+</div>
+
+<!-- ══════════ FAQ VIEW ══════════ -->
+<div class="view on" id="view-faq">
+  <div class="toolbar">
+    <div class="srch">
+      <span class="si">🔍</span>
+      <input type="text" id="searchInput" placeholder='Search: "scholarship", "truancy", "enrollment", "diploma", "ASVAB", "withdrawal"…' oninput="onSearch(this.value)" autocomplete="off"/>
+      <button class="sc" id="sc" onclick="clearSrch()">✕</button>
+    </div>
+    <div class="pills" id="pills"></div>
+  </div>
+  <div class="faq-body">
+    <div class="sbar" id="sbar"></div>
+    <div class="fmain" id="fmain"></div>
+  </div>
+  <div class="no-r" id="noR">
+    <h3>No results found</h3>
+    <p>Try a different word — or use the <strong>Ask AI</strong> tab to get an answer to any question not yet in the database.</p>
+  </div>
+</div>
+
+<!-- ══════════ AI VIEW ══════════ -->
+<div class="view" id="view-ai">
+  <div class="ai-inner">
+    <div class="ai-hero">
+      <h2>Ask Anything — AI-Powered Answers</h2>
+      <p>Type any question a parent, campus dean, partner agency, or staff member might ask — even if it is not in the FAQ database. The AI generates a family-ready answer and a staff reference, grounded in Elev8 Schools SOP knowledge. Save useful answers directly to the shared database.</p>
+      <div class="tip">💡 Click <strong>"Save to Shared FAQ"</strong> after a good answer — it syncs to Google Sheets and every campus sees it immediately.</div>
+    </div>
+    <div class="ai-row">
+      <input type="text" id="aiQ" placeholder="e.g. 'What if a foster youth doesn't have a birth certificate?'" onkeydown="if(event.key==='Enter')askAI()"/>
+      <button class="ai-btn" id="aiBtn" onclick="askAI()">Ask AI ✦</button>
+    </div>
+    <div class="dots" id="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div><p style="margin-top:10px;font-size:13px;color:var(--g400)">Generating answer…</p></div>
+    <div id="aiOut"></div>
+  </div>
+</div>
+
+<!-- ══════════ ADD VIEW ══════════ -->
+<div class="view" id="view-add">
+  <div class="add-inner">
+    <div class="afc">
+      <h2>➕ Add a New FAQ Entry</h2>
+      <p>When a caller asks a question not in the database, add it here. It saves to Google Sheets and appears across every campus immediately.</p>
+      <div class="fr">
+        <div class="ff"><label>Department</label>
+          <select id="aDept">
+            <option value="recruiting">🎯 Recruiting</option>
+            <option value="customer-care" selected>📞 Customer Care</option>
+            <option value="truancy">📋 Truancy</option>
+            <option value="supplemental">🎓 Supplemental Services</option>
+            <option value="specialized">🤝 Specialized Services</option>
+            <option value="custom">⭐ General / Cross-Department</option>
+          </select>
+        </div>
+        <div class="ff"><label>Category</label><input type="text" id="aCat" placeholder="e.g. Enrollment, Billing…"/></div>
+      </div>
+      <div class="ff"><label>Question</label><input type="text" id="aQ" placeholder="Write the question as a caller would ask it"/></div>
+      <div class="ff"><label>Keywords / Search Tags</label><input type="text" id="aTags" placeholder="e.g. enrollment, transfer, scholarship — comma-separated"/></div>
+      <div class="ff"><label>🟦 Family / Parent-Facing Answer</label><textarea id="aFam" placeholder="Warm, plain language. Elevation-framed. Read directly to the caller."></textarea></div>
+      <div class="ff"><label>🟨 Staff Internal Reference + SOP Location</label><textarea id="aStaff" placeholder="Operational detail + SOP section. e.g. 'Reference: CC SOP v2 Section 6'"></textarea></div>
+      <button class="asub" onclick="addQ()">Save to Shared FAQ Database</button>
+      <div class="toast" id="addToast">✅ Saved to Google Sheets! All campuses can see this question now.</div>
+      <div class="err-toast" id="addErr">⚠️ Could not save to Google Sheets. Check Setup tab to confirm your Sheet is configured. Question saved locally for now.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ MANAGE VIEW ══════════ -->
+<div class="view" id="view-manage">
+  <div class="mg-inner">
+    <div class="mg-hdr">
+      <h2>⚙️ FAQ Database — <span id="mgCount">0</span> Questions</h2>
+      <div class="mg-btns">
+        <button class="exp-btn" onclick="exportJSON()">📥 Export JSON</button>
+        <button class="exp-btn" onclick="exportCSV()" style="background:var(--navy);color:var(--white)">📥 Export CSV</button>
+      </div>
+    </div>
+    <div class="mg-table">
+      <div class="mgr hd"><div>Question</div><div>Department</div><div>Category</div><div>Action</div></div>
+      <div id="mgList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ SETUP VIEW ══════════ -->
+<div class="view" id="view-setup">
+  <div class="setup-inner">
+    <div class="setup-card">
+      <h2>🔧 Google Sheets Live Sync — Setup Guide</h2>
+      <p>Follow these steps once to connect this FAQ tool to your Google Sheet. After setup, any question added by any staff member on any campus will appear for everyone automatically. This only needs to be done one time by whoever sets up the system.</p>
+
+      <!-- STEP 0: CONFIGURE -->
+      <div class="cfg-form">
+        <h3>Quick Config — Paste Your Sheet ID Here</h3>
+        <p style="font-size:13px;color:var(--g600);margin-bottom:12px">Once you have your Google Sheet set up (Step 2 below), paste your Sheet ID here and click Save. The Sheet ID is the long string in your Sheet URL between <code>/d/</code> and <code>/edit</code>.</p>
+        <div class="cfg-row">
+          <div class="ff"><label>Google Sheet ID</label><input type="text" id="sheetIdInput" placeholder="e.g. 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms"/></div>
+          <button class="save-cfg" onclick="saveCfg()">Save & Connect</button>
+        </div>
+        <div class="cfg-status" id="cfgStatus">✅ Sheet ID saved! Click "Sync Now" in the toolbar to load questions.</div>
+      </div>
+
+      <div class="step-block">
+        <div class="step-num">1</div>
+        <h3>Create a Google Sheet</h3>
+        <p>Go to <strong>sheets.google.com</strong> and create a new blank spreadsheet. Name it <strong>"Elev8 FAQ Database"</strong>. In Row 1, add these exact column headers in order:</p>
+        <code>id | dept | cat | tags | q | family | staff</code>
+        <p style="margin-top:8px;font-size:12px;color:var(--g400)">Note: You can copy and paste the built-in FAQ data from the Export CSV button on the Manage tab to pre-populate the Sheet.</p>
+        <button class="copy-btn" onclick="copyHeaders()">Copy Headers</button>
+      </div>
+
+      <div class="step-block">
+        <div class="step-num">2</div>
+        <h3>Publish the Sheet as a Web App (Read Access)</h3>
+        <p>This is what allows the FAQ tool to read your Sheet without requiring staff to log in. In your Google Sheet:</p>
+        <p><strong>File → Share → Publish to web → Sheet1 → CSV → Publish</strong></p>
+        <p style="margin-top:8px">Copy the published URL. Your Sheet ID is the long string in your Sheet's regular URL between <code>/d/</code> and <code>/edit</code>. Paste just the Sheet ID in the Quick Config box above.</p>
+      </div>
+
+      <div class="step-block">
+        <div class="step-num">3</div>
+        <h3>Set Up Write Access (for Adding Questions)</h3>
+        <p>To allow staff to add questions from the FAQ tool, you need a Google Apps Script Web App. Here is the script — paste it into your Sheet's Script Editor (<strong>Extensions → Apps Script</strong>):</p>
+        <code id="appsScriptCode">function doPost(e) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var data = JSON.parse(e.postData.contents);
+  sheet.appendRow([
+    data.id, data.dept, data.cat, data.tags,
+    data.q, data.family, data.staff
+  ]);
+  return ContentService.createTextOutput(JSON.stringify({status:'ok'}))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doDelete(e) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var id = e.parameter.id;
+  var data = sheet.getDataRange().getValues();
+  for (var i = 1; i < data.length; i++) {
+    if (data[i][0] === id) { sheet.deleteRow(i + 1); break; }
+  }
+  return ContentService.createTextOutput(JSON.stringify({status:'ok'}))
+    .setMimeType(ContentService.MimeType.JSON);
+}</code>
+        <button class="copy-btn" onclick="copyScript()">Copy Script</button>
+        <p style="margin-top:10px;font-size:13px;color:var(--g600)">After pasting the script: click <strong>Deploy → New deployment → Web App</strong>. Set <strong>Execute as: Me</strong> and <strong>Who has access: Anyone</strong>. Copy the Web App URL and paste it below:</p>
+        <div class="ff" style="margin-top:10px"><label>Apps Script Web App URL (for writing new questions)</label><input type="text" id="webAppUrl" placeholder="https://script.google.com/macros/s/YOUR_ID/exec"/></div>
+        <button class="copy-btn" style="margin-top:8px" onclick="saveWebApp()">Save Web App URL</button>
+        <div class="cfg-status" id="waStatus">✅ Web App URL saved! The Add Question tab will now sync to Google Sheets.</div>
+      </div>
+
+      <div class="step-block">
+        <div class="step-num">4</div>
+        <h3>Host on GitHub Pages (Access from Any Campus)</h3>
+        <p>To make this tool available from every campus at a single URL:</p>
+        <p>1. Go to <strong>github.com</strong> and create a free account</p>
+        <p>2. Create a new repository named <strong>elev8-faq</strong> — set it to <strong>Private</strong></p>
+        <p>3. Upload this HTML file to the repository</p>
+        <p>4. Go to <strong>Settings → Pages → Source: main branch</strong> → Save</p>
+        <p>5. Your FAQ tool will be live at: <code>https://[your-username].github.io/elev8-faq</code></p>
+        <p style="margin-top:8px;font-size:12px;color:var(--g400)">Share this URL only with authorized staff. Since the repository is private, the tool content is not indexed or discoverable by search engines.</p>
+      </div>
+
+      <div class="step-block">
+        <div class="step-num">5</div>
+        <h3>Control Staff Access</h3>
+        <p><strong>To view the FAQ tool:</strong> Share the GitHub Pages URL only with authorized staff. No login required — URL access is the control.</p>
+        <p><strong>To add/edit questions via the Sheet directly:</strong> In Google Sheets, click <strong>Share</strong> and add only the staff email addresses you authorize. They can add rows directly in the Sheet — changes appear in the tool on next sync.</p>
+        <p><strong>To revoke access:</strong> Remove their email from the Sheet's sharing settings. Their ability to edit is immediately revoked.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<button class="scroll-top" id="scrollTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+
+<script>
+// ══════════════════════════════════════════════════════════
+// CONFIG — stored in localStorage
+// ══════════════════════════════════════════════════════════
+const CFG_KEY = 'elev8_faq_cfg';
+const CUSTOM_KEY = 'elev8_faq_local';
+
+function getCfg() {
+  try { return JSON.parse(localStorage.getItem(CFG_KEY) || '{}'); } catch { return {}; }
+}
+function setCfg(obj) { localStorage.setItem(CFG_KEY, JSON.stringify(obj)); }
+function getLocal() {
+  try { return JSON.parse(localStorage.getItem(CUSTOM_KEY) || '[]'); } catch { return []; }
+}
+function setLocal(arr) { localStorage.setItem(CUSTOM_KEY, JSON.stringify(arr)); }
+
+// ══════════════════════════════════════════════════════════
+// DEPT CONFIG
+// ══════════════════════════════════════════════════════════
+const DEPTS = {
+  recruiting:      { label:'Recruiting',           color:'#4F46E5', icon:'🎯' },
+  'customer-care': { label:'Customer Care',         color:'#0891B2', icon:'📞' },
+  truancy:         { label:'Truancy',               color:'#B45309', icon:'📋' },
+  supplemental:    { label:'Supplemental Services', color:'#059669', icon:'🎓' },
+  specialized:     { label:'Specialized Services',  color:'#7C3AED', icon:'🤝' },
+  custom:          { label:'General / Cross-Dept',  color:'#BE185D', icon:'⭐' },
+};
+
+// ══════════════════════════════════════════════════════════
+// SOP SYSTEM PROMPT
+// ══════════════════════════════════════════════════════════
+const SOP_CTX = `You are a knowledgeable assistant for Elev8 Schools (formerly Foundation Academies), an 8-campus private K–12 scholarship-accepting school in South Florida, West Virginia, and Arizona. You answer questions for staff speaking with parents, scholars, or partners.
+
+ONE DOOR ENROLLMENT POLICY: ALL enrollment, re-enrollment, and registration is processed exclusively through Customer Care (Ms. Lissette Tapanes) at 786-384-8424. No other department finalizes enrollment independently.
+
+WITHDRAWAL AUTHORIZATION POLICY: No withdrawal finalized without (1) Truancy Department review and (2) Written authorization from Dr. Denrich Everett, Assistant Superintendent. Billing processes ONLY after both are complete.
+
+KEY STAFF: Dr. Denrich Everett (Assistant Superintendent), Ms. Lissette Tapanes (Customer Care Director), Ms. A. Escobar (Truancy Lead), Mr. Graham (Supplemental Services Director), Ms. Alexandria Cazanas (Specialized Services Lead — Kids of Care, Military, DJJ/Probation, VR Employment).
+
+CAMPUSES: Florida City, Cutler Bay, Liberty City, Miami Gardens, Oakland Park, Pompano Beach (FL); Archie Talley Academy (WV); Tyson TTA (AZ). GRADES: 6–12. LANGUAGES: English, Spanish, Haitian Creole.
+
+SCHOLARSHIPS: FTC, FES-EO, FES-UA, FTC-PEP, Modified Tuition Rate — $8,000/student via Step Up For Students (SUFS)/EMA. Payout: June 15=$8k, July 15=$7k, Dec 15=$4k, Feb 15=$2k. Renewal: March–June annually.
+
+ATTENDANCE: 25 hours/week minimum. Shift 1: 8AM–1PM; Shift 2: 1PM–4PM, Mon–Fri.
+
+PROGRAMS: GRAD Program (CareerSource — requires FL ID, SS Card, Birth Certificate, Withdrawal Card); Dual Enrollment (Traditional: Lead Teacher+Graham; Trade: Graham only); VR (Specialized identifies→Supplemental delivers); STEP Team (Dr. Nambiar, Mrs. Pierlow, Mrs. Castro — FAFSA, college apps, career); Kids of Care (foster youth); Military Program (ASVAB, recruiters — FERPA consent required); Institutional Programming (DJJ, probation, re-entry).
+
+EBPI FRAMEWORK: Emotional, Belief, Physiological Intelligence — whole-child development. No deficit language. Elevation-framed always.
+
+Respond ONLY in this exact JSON (no markdown, no code fences):
+{"family":"[warm parent-facing answer, 3–5 sentences, elevation-framed]","staff":"[operational detail + SOP reference, 3–6 sentences]","dept":"[recruiting|customer-care|truancy|supplemental|specialized|custom]","category":"[short topic label]","tags":"[5–8 comma-separated keywords]"}`;
+
+// ══════════════════════════════════════════════════════════
+// BUILT-IN FAQ
+// ══════════════════════════════════════════════════════════
+const BUILT_IN = [
+  {id:'b1',dept:'recruiting',cat:'Enrollment',tags:['enrollment','apply','get started','new student','registration'],q:'How do I get my child enrolled at Elev8 Schools?',family:'We would love to welcome your scholar to the Elev8 family! The process starts with a simple call to our Customer Care team at 786-384-8424. A representative will guide you through every step — confirming your scholar\'s grade level, scholarship eligibility, and scheduling an enrollment appointment.',staff:'All enrollment through Customer Care (One Door Policy). Recruiting qualifies the lead — CC processes enrollment. Log in GHL same day, assign campus tag, flag for CC within 24hrs. Ref: Recruiting SOP v4 §7; CC SOP v2 §3.'},
+  {id:'b2',dept:'recruiting',cat:'Pricing',tags:['scholarship','cost','tuition','pricing','free','fees','pay'],q:'How much does Elev8 Schools cost? Is it free?',family:'Elev8 is a scholarship-accepting private school. For qualifying families, tuition is fully funded through Florida scholarships like FTC and FES-EO through Step Up For Students. Our team will walk you through your options. Minor fees may apply for uniforms or field trips.',staff:'$8,000/scholarship student. Accepted: FTC, FES-EO, FES-UA, FTC-PEP, Modified Tuition Rate. Non-covered: registration fees, uniforms, meals, transportation, device insurance, field trips, testing. Modified Tuition Rate requires Dr. Everett approval. Ref: Recruiting SOP v4 §5.2; CC SOP v2 §9.'},
+  {id:'b3',dept:'recruiting',cat:'Eligibility',tags:['grades','age','eligible','qualify','who can enroll'],q:'What grades does Elev8 serve? Who is eligible?',family:'Elev8 Schools serves students in grades 6 through 12. We welcome scholars ready to grow in a supportive, non-traditional environment. Scholarship eligibility is determined by the scholarship sponsor — our team will help you understand your options.',staff:'Grades 6–12. Scholarship eligibility determined by SUFS. Conditional enrollment available for pending scholarships. Ref: CC SOP v2 §6.'},
+  {id:'b4',dept:'recruiting',cat:'Campuses',tags:['campus','location','where','address','near me'],q:'Where are Elev8 Schools campuses located?',family:'We have campuses in Florida City, Cutler Bay, Liberty City, Miami Gardens, Oakland Park, and Pompano Beach in South Florida, plus Montgomery, West Virginia (Archie Talley Academy) and Phoenix, Arizona (Tyson TTA Campus). Our team can help identify the best fit.',staff:'8 campuses total. FL: City, Cutler Bay, Liberty City, Miami Gardens, Oakland Park, Pompano Beach. WV: Archie Talley Academy. AZ: Tyson TTA. WV and AZ in enrollment ramp-up. Ref: Recruiting SOP v4 §5.'},
+  {id:'b5',dept:'recruiting',cat:'Referral',tags:['referral','refer','$400','community partner','incentive'],q:'Is there a referral program?',family:'Yes! If you refer a family whose scholar successfully enrolls, you may be eligible for our community referral appreciation program. Please ask our team for details.',staff:'$400 referral per enrolled scholar, paid quarterly upon confirmed enrollment + scholarship activation. Documented in GHL at point of contact. Ref: Recruiting SOP v4 §6.3.'},
+  {id:'b6',dept:'recruiting',cat:'Schedule',tags:['schedule','hours','shifts','flexible','time'],q:'What are Elev8 Schools hours? Is the schedule flexible?',family:'Yes — we offer a flexible shift schedule: Morning shift 8:00 AM–1:00 PM and Afternoon shift 1:00 PM–4:00 PM, Monday through Friday. This accommodates scholars with work, family, or transportation commitments.',staff:'Shift 1: 8AM–1PM. Shift 2: 1PM–4PM, Mon–Fri. Attendance finalized 8:30AM; adjustments until 9AM; reported to Truancy by 10AM daily. Ref: Truancy SOP v2 §5.3.'},
+  {id:'b7',dept:'recruiting',cat:'Transfer',tags:['transfer','mid year','switching schools'],q:'Can my scholar transfer to Elev8 mid-year?',family:'Yes, we accept scholars throughout the year. Our team will review transcripts, confirm academic placement, and ensure scholarship transitions correctly. Please bring your scholar\'s withdrawal form and prior school records.',staff:'Mid-year transfers allowed. Scholarship proration: after Dec 15 = 50% award. Prior school withdrawal form required. Credit breakdown within 10 business days of enrollment. Ref: CC SOP v2 §6.'},
+  {id:'b8',dept:'recruiting',cat:'Re-Enrollment',tags:['re-enroll','return','withdrew','re-engage','came back'],q:'Can a student who withdrew re-enroll?',family:'Absolutely — we never give up on a scholar. Reach out to our Customer Care team and we will start the re-enrollment process. The door is always open.',staff:'Re-engagement: withdrawn scholars on GHL roster within 24hrs. Days 1–7: contact attempts. Day 7 (no contact): YAMM trilingual email. Day 14: Dr. Everett reviews. Re-enrollment: Customer Care processes per One Door Policy. Ref: Truancy SOP v2 §13.'},
+  {id:'b9',dept:'customer-care',cat:'Enrollment Process',tags:['enrollment','register','sign up','application','process'],q:'How does the enrollment process work from start to finish?',family:'Enrolling with Elev8 is a guided step-by-step process. Contact our Customer Care team at 786-384-8424. A rep will confirm your scholar\'s grade level and scholarship status, guide you through document submission, and activate your scholar in our system. Your campus is then notified for a smooth first day.',staff:'7-Stage funnel (One Door Policy): 1-Inquiry, 2-Qualification (24hr), 3-Application (same day), 4-Scholarship Setup (48hrs), 5-Confirmation, 6-Campus Handoff (same day), 7-First Day. All in GHL. Stalled = 3 days; escalation Day 3→5→7→Dr. Everett. Ref: CC SOP v2 §6.'},
+  {id:'b10',dept:'customer-care',cat:'Documents',tags:['documents','paperwork','birth certificate','id','proof of residency'],q:'What documents do I need to enroll?',family:'You will need: birth certificate or passport, state-issued photo ID (not expired), proof of residency (utility bill, government letter, pay stubs, or lease), prior school records, and your scholarship award letter if you have one. Our team will walk you through each item.',staff:'Required: birth cert/passport, state ID (not expired), proof of residency, prior records (report cards, transcripts, withdrawal form), Step Up Award ID, custody docs if applicable. No activation without all docs. Ref: CC SOP v2 §6.2.'},
+  {id:'b11',dept:'customer-care',cat:'Virtual Registration',tags:['virtual','online','registration','remote','zoom'],q:'Can we enroll online or virtually?',family:'Yes! We offer virtual enrollment appointments for families who cannot come in person. Call 786-384-8424 to schedule. All documents can be submitted digitally. Spanish and Haitian Creole virtual sessions are available.',staff:'Virtual registration: Mon–Fri 8AM–5PM by appointment. Google Calendar link sent via email + SMS. Documents: secure upload link from Registrar. Bilingual sessions: flag in GHL, assign bilingual rep. Log as "Virtual." Ref: CC SOP v2 §6.4.'},
+  {id:'b12',dept:'customer-care',cat:'Transcripts',tags:['transcript','records','request','school records'],q:'How do I request my scholar\'s transcripts?',family:'Submit a request by phone, email, or in person Mon–Fri 8AM–5PM. Standard processing: 3–5 business days. Urgent needs can be expedited — just let us know. All records released securely.',staff:'Process: Request → Registrar verifies (same day) → Ms. Tapanes FERPA review + written approval (48hrs) → Registrar releases (24hrs of approval) → Logged in GHL + student file. Standard: 3–5 business days. Ref: CC SOP v2 §8.'},
+  {id:'b13',dept:'customer-care',cat:'Diploma',tags:['diploma','graduation','graduate','complete'],q:'How does my scholar receive their diploma?',family:'When all graduation requirements are met, the campus verifies completion and our registrar processes the diploma — typically presented at graduation or a scheduled pickup. Every diploma represents a life elevated.',staff:'Workflow: Dean submits eligibility → Registrar audits (3 biz days) → Ms. Tapanes written approval (24hrs) → Diploma produced (5 biz days) → Presented with signature. Eligibility: all credits, no outstanding balance, scholarship in good standing. Ref: CC SOP v2 §8.2.'},
+  {id:'b14',dept:'customer-care',cat:'Billing',tags:['payment','billing','balance','fees','pay','outstanding'],q:'What if my family has an outstanding balance?',family:'Our team will contact you to discuss payment options including payment plans. Your scholar\'s education is our priority — we will not remove a scholar for a balance without exhausting every support option first. Please call 786-384-8424.',staff:'Protocol: Day 1—notify family. Day 7—follow-up + payment plan. Day 14—formal notice (Ms. Tapanes). Day 30—Dr. Everett review; no enrollment action without approval. Payment plans: written agreement + Ms. Tapanes approval. Ref: CC SOP v2 §10.'},
+  {id:'b15',dept:'customer-care',cat:'Scholarship / EMA',tags:['scholarship','step up','EMA','award','SUFS','FTC','FES'],q:'How do I use my Step Up scholarship at Elev8?',family:'Apply or renew in EMA, accept your award, and share your Award ID with our registrar. We confirm enrollment in EMA, and each quarter you approve an invoice in your EMA account within 10 days. Our team will send reminders.',staff:'EMA workflow: Family applies/renews → Accepts award → Shares Award ID → Registrar confirms in EMA (24hrs) → Family approves quarterly invoice (10 days) → Funds released. Day 5 reminder if not approved. Ref: CC SOP v2 §7 and §9.'},
+  {id:'b16',dept:'customer-care',cat:'Hours / Contact',tags:['hours','open','call','contact','phone','office'],q:'What are Customer Care hours and how do I reach your team?',family:'Monday–Friday, 8:00 AM to 5:00 PM. Call us at 786-384-8424. Voicemails returned within 2 business hours, emails within 24 business hours.',staff:'Standard: Mon–Fri 8AM–5PM. Voicemail SLA: 2 business hours. Email SLA: 24 business hours. Extended hours June–November at Ms. Tapanes\' discretion with Dr. Everett approval. Ref: CC SOP v2 §5.'},
+  {id:'b17',dept:'customer-care',cat:'Renewal',tags:['renewal','renew scholarship','annual renewal','march','june'],q:'How does scholarship renewal work?',family:'Renewal happens every year between March and June. You will need to update your Proof of Residency and confirm your Step Up Award Number. Our team begins outreach March 1st — please complete by June 30th to protect your scholar\'s fall funding.',staff:'Annual window: March 1–June 30. Required: updated Proof of Residency + Step Up Award Number. Outreach begins March 1 — YAMM + phone + SMS. Families without renewal by June 30 escalated to Dr. Everett. Ref: CC SOP v2 §9.2.'},
+  {id:'b18',dept:'customer-care',cat:'Language Access',tags:['language','spanish','creole','bilingual','haitian'],q:'Can Elev8 serve our family in Spanish or Haitian Creole?',family:'Yes! All materials and services are available in English, Spanish, and Haitian Creole. When you call, let us know your preferred language and we will connect you with the right representative.',staff:'Trilingual standard non-negotiable. All family-facing materials in English, Spanish, Haitian Creole. Language preference in GHL contact record. YAMM campaigns sent separately per language. Ref: CC SOP v2 §1.2.'},
+  {id:'b19',dept:'truancy',cat:'Absences',tags:['truancy','absent','attendance','missing school','not coming'],q:'What happens if my scholar misses school?',family:'We will reach out to you the same day your scholar is absent. After 3 consecutive days, your scholar enters our monitoring process — not as punishment, but as early support. We work with your family through a one-week response window. We are here to help.',staff:'Same-day outreach by campus (12PM) for any absence. Day 3 consecutive = Truancy Tab (monitoring only — NOT official truancy). Official truancy = below 25 hrs/week. 1-week parent response window. All steps documented. Ref: Truancy SOP v2 §6.'},
+  {id:'b20',dept:'truancy',cat:'Attendance Requirements',tags:['attendance requirement','25 hours','required hours','attendance policy'],q:'What is the attendance requirement?',family:'All enrolled scholars must attend a minimum of 25 hours per week — in person or through approved virtual participation. This protects your scholar\'s academic progress and their scholarship funding.',staff:'Minimum 25 hours/week — in-person or approved virtual. SUFS compliance requirement. Below threshold → monitoring → official truancy. Approaching 80% = Scholarship Risk Flag — Registrar + Ms. Tapanes notified immediately. Ref: Truancy SOP v2 §5.1.'},
+  {id:'b21',dept:'truancy',cat:'Excused Absences',tags:['excused absence','excuse','documentation','note','sick','medical'],q:'How do I report or excuse my scholar\'s absence?',family:'Call or email the campus by 8:00 AM on the day of absence. To excuse an absence, provide written documentation on your scholar\'s return day — a doctor\'s note, religious observance documentation, or family emergency note.',staff:'Same-day outreach by campus (12PM). Excused: illness, medical/dental, religious observance, family emergency — documentation on return day. No documentation = unexcused. Attendance recorded 8:30AM; adjustments until 9AM; Truancy report by 10AM. Ref: Truancy SOP v2 §5.2 and §5.3.'},
+  {id:'b22',dept:'truancy',cat:'Withdrawal',tags:['withdrawal','withdraw','leave school','unenroll','remove'],q:'How do we withdraw our scholar from Elev8?',family:'Before any withdrawal is processed, our Truancy team will reach out to understand your needs and explore every support option. Withdrawals require a formal review and approval process. Once confirmed, all records are transferred and scholarship status updated. Families are always welcome to return.',staff:'WITHDRAWAL POLICY — 3 Gates: Gate 1: Truancy reviews + Withdrawal Review Form (Ms. Escobar + Dean). Gate 2: Dr. Everett written authorization. Gate 3: Registrar processes all systems + notifies SUFS. NO withdrawal without Dr. Everett authorization. Scholar on re-engagement roster within 24hrs. Ref: Truancy SOP v2 §2.'},
+  {id:'b23',dept:'truancy',cat:'Scholarship & Attendance',tags:['scholarship attendance','lose scholarship','funding','billing'],q:'Can attendance issues affect my scholar\'s scholarship?',family:'Yes — scholarship funding is connected to your scholar\'s attendance. If attendance falls critically low, funding can be affected. This is why we reach out early. If you receive a scholarship risk notice, please contact us right away.',staff:'Scholarship Risk Flag near 80% threshold: Registrar + Ms. Tapanes notified immediately, SUFS compliance action initiated. Quarterly billing: invoices only for scholars meeting 25-hr/week standard per Truancy compliance report + Dr. Everett written authorization. Ref: Truancy SOP v2 §9.'},
+  {id:'b24',dept:'supplemental',cat:'GRAD Program',tags:['GRAD program','careersource','graduation','workforce','career'],q:'What is the GRAD Program and who qualifies?',family:'The GRAD Program is a CareerSource Florida partnership providing graduation support and workforce readiness for eligible scholars at no additional cost. Scholars meet with a CareerSource rep and develop a personalized pathway plan.',staff:'CareerSource-funded. Required docs before activation (Registrar → Mr. Graham + GRAD Coordinator): FL State ID, SS Card, Birth Certificate, Withdrawal Card. Invoice submitted only after full registration + initial CareerSource meeting confirmed. Ref: Supplemental Services SOP v2 §5.'},
+  {id:'b25',dept:'supplemental',cat:'Dual Enrollment',tags:['dual enrollment','college','credit','certification','trade','vocational'],q:'Can my scholar take college classes or trade courses?',family:'Yes! Dual Enrollment lets scholars earn college credits, industry certifications, or trade credentials while enrolled at Elev8. Our team helps select a pathway and connects scholars with partner institutions.',staff:'Two tracks: Traditional (college/cert) — reports to Lead Teacher AND Mr. Graham. Trade/Vocational — reports to Mr. Graham only. Scholar must be confirmed enrolled at Elev8 through Customer Care before pathway activated. Ref: Supplemental Services SOP v2 §6.'},
+  {id:'b26',dept:'supplemental',cat:'VR / Vocational Rehab',tags:['VR','vocational rehab','disability','employment','job'],q:'What is Vocational Rehabilitation and can my scholar receive it?',family:'VR is a state-funded program for scholars with documented disabilities or employment barriers — providing job skills training and employment connections. Ask our Supplemental Services team if your scholar may qualify.',staff:'Florida DVR — managed through PERM. Identified by Specialized Services (Ms. Cazanas); service delivery by Mr. Graham (SA1/SA2/SA3, WBLE, Work Site Agreements, weekly reimbursements). Scholar must be confirmed enrolled before VR activated. Ref: Supplemental Services SOP v2 §7.'},
+  {id:'b27',dept:'supplemental',cat:'STEP Program',tags:['STEP','senior','FAFSA','college application','transition','graduating'],q:'What support does Elev8 offer for seniors?',family:'Our STEP Program helps graduating seniors with FAFSA, college applications, scholarship searches, career exploration, mentorship, and job referrals. Our STEP Team meets bi-weekly on Wednesday afternoons.',staff:'STEP Team: Dr. Nambiar (academic transition), Mrs. Pierlow (FAFSA/financial aid), Mrs. Castro (college apps/career). Mr. Graham directs. Bi-weekly Wednesday, max 30 min. At-Risk scholars → Mr. Graham within 24hrs. Ref: Supplemental Services SOP v2 §8.'},
+  {id:'b28',dept:'specialized',cat:'Foster Care',tags:['foster care','foster','DCF','kids of care','group home'],q:'Does Elev8 work with youth in foster care?',family:'Yes — our Kids of Care program serves scholars in foster care with enrollment coordination, agency reporting, graduation support, and benefits navigation including free driver\'s license programs for eligible youth. We partner directly with foster care agencies.',staff:'Kids of Care — Ms. Cazanas manages all agency partnerships (MOU required). Enrollment: Referral → contact case manager (24hrs) → enrollment with Customer Care (5 biz days) → campus brief by Ms. Cazanas (2 biz days post-enrollment). Bi-weekly progress + agency reporting per MOU. Ref: Specialized Services SOP v3 §5.'},
+  {id:'b29',dept:'specialized',cat:'DJJ / Institutional',tags:['DJJ','probation','justice','court','re-entry','juvenile'],q:'Does Elev8 enroll students connected to the court system or on probation?',family:'Yes — we partner with DJJ and probation offices to provide educational pathways for justice-involved youth. We offer virtual enrollment accommodations and flexible scheduling. Every scholar receives a fresh start — no labels, just elevation.',staff:'Institutional Programming — Ms. Cazanas manages all DJJ/probation relationships (MOU required, Dr. Everett approval). Virtual enrollment options for supervised scholars. Campus brief post-enrollment. Institutional reporting = zero-tolerance for lateness. Ref: Specialized Services SOP v3 §7.'},
+  {id:'b30',dept:'specialized',cat:'Military / ASVAB',tags:['ASVAB','military','army','navy','recruit','enlist'],q:'Can Elev8 help with ASVAB or military recruiters?',family:'Yes! We connect scholars with recruiters from all branches of the Armed Forces and coordinate ASVAB exam scheduling and preparation. Guardian written consent is required before recruiter contact.',staff:'Military Program — Ms. Cazanas manages. Guardian written consent required before recruiter contact (FERPA). ASVAB: site/date coordinated + prep resources (min 2 weeks). Results logged in Military Registry. Monthly report to Dr. Everett. Ref: Specialized Services SOP v3 §6.'},
+];
+
+// ══════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════
+let sheetData = [];
+let srchQ = '';
+let activeDepts = new Set(Object.keys(DEPTS));
+let pendingAI = null;
+
+function getAllFAQ() {
+  const local = getLocal();
+  const sheetIds = new Set(sheetData.map(r=>r.id));
+  const localFiltered = local.filter(r => !sheetIds.has(r.id));
+  return [...BUILT_IN, ...sheetData, ...localFiltered];
+}
+
+// ══════════════════════════════════════════════════════════
+// VIEW SWITCHING
+// ══════════════════════════════════════════════════════════
+function showView(v) {
+  document.querySelectorAll('.view').forEach(el => el.classList.remove('on'));
+  document.querySelectorAll('.tab').forEach(el => el.classList.remove('on'));
+  document.getElementById('view-'+v).classList.add('on');
+  const labels = {faq:'faq',ai:'ask',add:'add',manage:'manage',setup:'setup'};
+  document.querySelectorAll('.tab').forEach(el => {
+    if (el.textContent.toLowerCase().includes(labels[v]||v)) el.classList.add('on');
+  });
+  if (v==='manage') renderManage();
+  if (v==='faq') renderFAQ();
+  if (v==='setup') loadSetupState();
+}
+
+// ══════════════════════════════════════════════════════════
+// GOOGLE SHEETS SYNC
+// ══════════════════════════════════════════════════════════
+function setSyncStatus(state, msg) {
+  const dot = document.getElementById('syncDot');
+  const txt = document.getElementById('syncTxt');
+  dot.className = 'sync-dot ' + state;
+  txt.textContent = msg;
+}
+
+async function syncSheet() {
+  const cfg = getCfg();
+  if (!cfg.sheetId) { setSyncStatus('err','Not configured — see Setup tab'); return; }
+  setSyncStatus('loading','Syncing with Google Sheets…');
+
+  const url = `https://docs.google.com/spreadsheets/d/${cfg.sheetId}/gviz/tq?tqx=out:csv&sheet=Sheet1`;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const csv = await res.text();
+    const rows = parseCSV(csv);
+
+    if (rows.length < 2) {
+      setSyncStatus('ok','Sheet connected — no custom questions yet');
+      sheetData = [];
+    } else {
+      const headers = rows[0].map(h => h.trim().toLowerCase().replace(/"/g,''));
+      sheetData = rows.slice(1)
+        .filter(r => r.length > 1 && r[headers.indexOf('q')||4])
+        .map(r => {
+          const get = k => {
+            const i = headers.indexOf(k);
+            return i >= 0 ? (r[i]||'').replace(/^"|"$/g,'') : '';
+          };
+          const tagsRaw = get('tags');
+          return {
+            id: get('id') || 'sh_'+Math.random().toString(36).slice(2),
+            dept: get('dept') || 'custom',
+            cat: get('cat') || 'General',
+            tags: tagsRaw ? tagsRaw.split(',').map(t=>t.trim()) : [],
+            q: get('q'),
+            family: get('family'),
+            staff: get('staff'),
+          };
+        }).filter(r => r.q && r.family && r.staff);
+
+      setSyncStatus('ok', `Synced — ${sheetData.length} sheet question${sheetData.length!==1?'s':''} + ${BUILT_IN.length} built-in`);
+    }
+    renderFAQ();
+    if (document.getElementById('view-manage').classList.contains('on')) renderManage();
+  } catch (err) {
+    setSyncStatus('err','Sync failed — check Sheet ID in Setup tab');
+    console.error('Sync error:', err);
+  }
+}
+
+function parseCSV(text) {
+  const rows = [];
+  let row = [], field = '', inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (ch === '"') {
+      if (inQuotes && text[i+1] === '"') { field += '"'; i++; }
+      else inQuotes = !inQuotes;
+    } else if (ch === ',' && !inQuotes) { row.push(field); field = ''; }
+    else if ((ch === '\n' || ch === '\r') && !inQuotes) {
+      if (ch === '\r' && text[i+1] === '\n') i++;
+      row.push(field); rows.push(row); row = []; field = '';
+    } else field += ch;
+  }
+  if (field || row.length) { row.push(field); rows.push(row); }
+  return rows;
+}
+
+async function writeToSheet(entry) {
+  const cfg = getCfg();
+  if (!cfg.webAppUrl) return false;
+  try {
+    const res = await fetch(cfg.webAppUrl, {
+      method: 'POST',
+      body: JSON.stringify({
+        id: entry.id,
+        dept: entry.dept,
+        cat: entry.cat,
+        tags: Array.isArray(entry.tags) ? entry.tags.join(', ') : entry.tags,
+        q: entry.q,
+        family: entry.family,
+        staff: entry.staff,
+      }),
+    });
+    return res.ok;
+  } catch { return false; }
+}
+
+// ══════════════════════════════════════════════════════════
+// FAQ RENDER
+// ══════════════════════════════════════════════════════════
+function renderPills() {
+  const c = document.getElementById('pills');
+  let h = `<button class="pill pill-all ${activeDepts.size===Object.keys(DEPTS).length?'on':''}" onclick="toggleAll()">⭐ All</button>`;
+  Object.keys(DEPTS).forEach(k => {
+    const d = DEPTS[k];
+    h += `<button class="pill ${activeDepts.has(k)?'on':''}" style="background:${d.color};color:white" onclick="toggleDept('${k}')">${d.icon} ${d.label}</button>`;
+  });
+  c.innerHTML = h;
+}
+
+function toggleAll() {
+  const allOn = activeDepts.size === Object.keys(DEPTS).length;
+  activeDepts = allOn ? new Set() : new Set(Object.keys(DEPTS));
+  renderPills(); renderFAQ();
+}
+function toggleDept(k) {
+  activeDepts.has(k) ? activeDepts.delete(k) : activeDepts.add(k);
+  renderPills(); renderFAQ();
+}
+
+function renderFAQ() {
+  const all = getAllFAQ();
+  const q = srchQ.toLowerCase().trim();
+  const groups = {};
+  Object.keys(DEPTS).forEach(k => groups[k] = []);
+
+  all.forEach(item => {
+    if (!activeDepts.has(item.dept)) return;
+    if (q) {
+      const tags = Array.isArray(item.tags) ? item.tags : (item.tags||'').split(',');
+      const match = item.q.toLowerCase().includes(q) ||
+        tags.some(t => t.toLowerCase().includes(q)) ||
+        item.family.toLowerCase().includes(q) ||
+        item.staff.toLowerCase().includes(q) ||
+        (item.cat||'').toLowerCase().includes(q);
+      if (!match) return;
+    }
+    if (!groups[item.dept]) groups[item.dept] = [];
+    groups[item.dept].push(item);
+  });
+
+  const total = Object.values(groups).reduce((s,a)=>s+a.length,0);
+  document.getElementById('noR').classList.toggle('on', total===0);
+
+  let sbarH = '', mainH = '';
+  Object.keys(DEPTS).forEach(k => {
+    const items = groups[k]||[];
+    if (!items.length) return;
+    const d = DEPTS[k];
+    sbarH += `<div class="sg"><h4 style="color:${d.color}">${d.icon} ${d.label}</h4>`;
+    items.forEach(item => {
+      sbarH += `<div class="sl" onclick="jumpTo('${item.id}')"><span class="sdot" style="background:${d.color}"></span>${item.q.length>52?item.q.slice(0,52)+'…':item.q}</div>`;
+    });
+    sbarH += '</div>';
+
+    mainH += `<div class="fsec" id="sec-${k}">
+      <div class="fsh">
+        <div class="dlabel" style="background:${d.color}">${d.icon} ${d.label}</div>
+        <h2>${d.label}</h2>
+        <span class="fqc">${items.length} question${items.length!==1?'s':''}</span>
+      </div>`;
+
+    items.forEach(item => {
+      const isNew = !item.id.startsWith('b');
+      const tags = Array.isArray(item.tags) ? item.tags : (item.tags||'').split(',').map(t=>t.trim());
+      const tagHtml = tags.slice(0,5).map(t => {
+        const hit = q && t.toLowerCase().includes(q);
+        return `<span class="qtag${hit?' hit':''}">${t}</span>`;
+      }).join('');
+
+      mainH += `<div class="fcard" id="${item.id}">
+        <div class="fq" onclick="tog('${item.id}')">
+          <div class="qi" style="background:${d.color}">${d.icon}</div>
+          <div class="qb">
+            <strong>${item.q}${isNew?'<span class="nbadge">NEW</span>':''}</strong>
+            <div class="qtags">${tagHtml}</div>
+          </div>
+          <span class="qchev">▼</span>
+        </div>
+        <div class="fans">
+          <div class="ap fam">
+            <div class="alb fam">🟦 FAMILY / PARENT-FACING ANSWER — Read directly to caller</div>
+            <div class="at fam">${item.family}</div>
+          </div>
+          <div class="ap stf">
+            <div class="alb stf">🟨 STAFF INTERNAL REFERENCE — Operational detail + SOP location</div>
+            <div class="at stf">${item.staff}</div>
+          </div>
+        </div>
+      </div>`;
+    });
+    mainH += '</div>';
+  });
+
+  document.getElementById('sbar').innerHTML = sbarH;
+  document.getElementById('fmain').innerHTML = mainH;
+}
+
+function tog(id) { document.getElementById(id)?.classList.toggle('open'); }
+function jumpTo(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.add('open');
+  setTimeout(() => el.scrollIntoView({ behavior:'smooth', block:'center' }), 50);
+}
+function onSearch(v) {
+  srchQ = v;
+  document.getElementById('sc').classList.toggle('on', !!v);
+  renderFAQ();
+}
+function clearSrch() {
+  document.getElementById('searchInput').value = '';
+  srchQ = '';
+  document.getElementById('sc').classList.remove('on');
+  renderFAQ();
+}
+
+// ══════════════════════════════════════════════════════════
+// AI
+// ══════════════════════════════════════════════════════════
+async function askAI() {
+  const question = document.getElementById('aiQ').value.trim();
+  if (!question) return;
+  const btn = document.getElementById('aiBtn');
+  const dots = document.getElementById('dots');
+  const out = document.getElementById('aiOut');
+  btn.disabled = true; dots.classList.add('on'); out.innerHTML = '';
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ model:'claude-sonnet-4-6', max_tokens:1000, system:SOP_CTX, messages:[{role:'user',content:question}] })
+    });
+    const data = await res.json();
+    const raw = data.content?.[0]?.text || '';
+    let parsed;
+    try { parsed = JSON.parse(raw.replace(/```json|```/g,'').trim()); }
+    catch { parsed = { family: raw.slice(0,400)||'Unable to generate response. Please try rephrasing.', staff:'Raw response received but could not parse. Try rephrasing.', dept:'custom', category:'General', tags:question }; }
+    pendingAI = { ...parsed, question };
+    const d = DEPTS[parsed.dept] || DEPTS['custom'];
+    out.innerHTML = `<div class="ai-resp">
+      <div class="ai-rh">
+        <div class="qi" style="background:${d.color};width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px">${d.icon}</div>
+        <span>AI Answer — "${question}"</span>
+        <span style="margin-left:auto;font-size:11px;opacity:.6">${d.label}</span>
+      </div>
+      <div class="ai-rb">
+        <div class="ai-fb"><div class="bl f">🟦 FAMILY / PARENT-FACING ANSWER</div><div class="bt2 f">${parsed.family}</div></div>
+        <div class="ai-sb"><div class="bl s">🟨 STAFF INTERNAL REFERENCE</div><div class="bt2 s">${parsed.staff}</div></div>
+      </div>
+      <div class="ai-sr">
+        <button class="svb" onclick="saveAI()">💾 Save to Shared FAQ</button>
+        <button class="discb" onclick="document.getElementById('aiOut').innerHTML='';pendingAI=null">Discard</button>
+        <span style="font-size:11px;color:var(--g400);margin-left:auto;align-self:center">Saves to Google Sheets — visible to all campuses</span>
+      </div>
+    </div>`;
+  } catch {
+    out.innerHTML = `<div style="background:var(--red-50);border-radius:10px;padding:16px;color:var(--red-700);font-size:13px"><strong>Connection error.</strong> Check your internet connection and try again, or use the Add Question tab to manually add this Q&A.</div>`;
+  } finally { btn.disabled = false; dots.classList.remove('on'); }
+}
+
+async function saveAI() {
+  if (!pendingAI) return;
+  const tags = typeof pendingAI.tags==='string' ? pendingAI.tags.split(',').map(t=>t.trim()) : (pendingAI.tags||[]);
+  const entry = {
+    id: 'c' + Date.now(),
+    dept: pendingAI.dept || 'custom',
+    cat: pendingAI.category || 'General',
+    tags, q: pendingAI.question,
+    family: pendingAI.family, staff: pendingAI.staff,
+  };
+  const saved = await writeToSheet(entry);
+  if (saved) { await syncSheet(); }
+  else {
+    const local = getLocal();
+    local.push(entry);
+    setLocal(local);
+  }
+  pendingAI = null;
+  document.getElementById('aiOut').innerHTML = `<div style="background:var(--green-50);border:1px solid var(--green-700);border-radius:10px;padding:14px 18px;color:var(--green-700);font-size:13px;font-weight:600;margin-bottom:16px">${saved?'✅ Saved to Google Sheets! All campuses can see this question now.':'✅ Saved locally (Google Sheets not configured). Configure in Setup tab to sync across campuses.'}</div>`;
+  renderFAQ();
+}
+
+// ══════════════════════════════════════════════════════════
+// ADD QUESTION
+// ══════════════════════════════════════════════════════════
+async function addQ() {
+  const dept  = document.getElementById('aDept').value;
+  const cat   = document.getElementById('aCat').value.trim();
+  const q     = document.getElementById('aQ').value.trim();
+  const tags  = document.getElementById('aTags').value.split(',').map(t=>t.trim()).filter(Boolean);
+  const fam   = document.getElementById('aFam').value.trim();
+  const staff = document.getElementById('aStaff').value.trim();
+  if (!q || !fam || !staff) { alert('Please fill in the Question, Family Answer, and Staff Reference fields.'); return; }
+
+  const entry = { id:'c'+Date.now(), dept, cat:cat||'General', tags, q, family:fam, staff };
+  const saved = await writeToSheet(entry);
+  if (saved) { await syncSheet(); }
+  else { const local = getLocal(); local.push(entry); setLocal(local); }
+
+  ['aQ','aCat','aTags','aFam','aStaff'].forEach(id => document.getElementById(id).value = '');
+  const toast = document.getElementById('addToast');
+  const errT  = document.getElementById('addErr');
+  if (saved) { toast.classList.add('on'); setTimeout(()=>toast.classList.remove('on'),4000); }
+  else { errT.classList.add('on'); setTimeout(()=>errT.classList.remove('on'),5000); }
+  renderFAQ();
+}
+
+// ══════════════════════════════════════════════════════════
+// MANAGE
+// ══════════════════════════════════════════════════════════
+function renderManage() {
+  const all = getAllFAQ();
+  document.getElementById('mgCount').textContent = all.length;
+  const local = getLocal();
+  const localIds = new Set(local.map(r=>r.id));
+  const sheetIds = new Set(sheetData.map(r=>r.id));
+
+  document.getElementById('mgList').innerHTML = all.map(item => {
+    const d = DEPTS[item.dept] || DEPTS['custom'];
+    const isBuiltIn = item.id.startsWith('b');
+    const isSheet = sheetIds.has(item.id);
+    const isLocal = localIds.has(item.id);
+    const badge = isBuiltIn ? '<span class="bchip">BUILT-IN</span>' :
+                  isSheet   ? '<span class="cchip">SHEET</span>' :
+                              '<span class="cchip" style="background:#BE185D">LOCAL</span>';
+    return `<div class="mgr">
+      <div style="font-size:12px;color:var(--navy);font-weight:${isBuiltIn?400:700}">${item.q}</div>
+      <div><span style="font-size:10px;color:${d.color};font-weight:700">${d.icon} ${d.label}</span></div>
+      <div style="font-size:11px;color:var(--g600)">${item.cat||'General'} ${badge}</div>
+      <div>${isBuiltIn?'<span style="font-size:11px;color:var(--g400)">Core</span>':`<button class="del-btn" onclick="delQ('${item.id}','${isSheet?'sheet':'local'}')">Delete</button>`}</div>
+    </div>`;
+  }).join('');
+}
+
+async function delQ(id, source) {
+  if (!confirm('Delete this question? It will be removed from the FAQ.')) return;
+  if (source === 'sheet') {
+    const cfg = getCfg();
+    if (cfg.webAppUrl) {
+      try { await fetch(cfg.webAppUrl + '?id=' + id, { method:'DELETE' }); } catch {}
+    }
+    await syncSheet();
+  } else {
+    const local = getLocal().filter(r => r.id !== id);
+    setLocal(local);
+  }
+  renderManage(); renderFAQ();
+}
+
+function exportJSON() {
+  const blob = new Blob([JSON.stringify(getAllFAQ(),null,2)],{type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'Elev8_FAQ_'+new Date().toISOString().slice(0,10)+'.json'; a.click();
+}
+function exportCSV() {
+  const all = getAllFAQ();
+  const rows = [['id','dept','cat','tags','q','family','staff'],...all.map(r=>[r.id,r.dept,r.cat,Array.isArray(r.tags)?r.tags.join(', '):r.tags,r.q,r.family,r.staff])];
+  const csv = rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv],{type:'text/csv'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'Elev8_FAQ_'+new Date().toISOString().slice(0,10)+'.csv'; a.click();
+}
+
+// ══════════════════════════════════════════════════════════
+// SETUP
+// ══════════════════════════════════════════════════════════
+function saveCfg() {
+  const id = document.getElementById('sheetIdInput').value.trim();
+  if (!id) { alert('Please paste your Google Sheet ID.'); return; }
+  const cfg = getCfg();
+  cfg.sheetId = id;
+  setCfg(cfg);
+  document.getElementById('cfgStatus').classList.add('on');
+  setTimeout(()=>document.getElementById('cfgStatus').classList.remove('on'),3000);
+  syncSheet();
+}
+function saveWebApp() {
+  const url = document.getElementById('webAppUrl').value.trim();
+  if (!url) { alert('Please paste your Apps Script Web App URL.'); return; }
+  const cfg = getCfg();
+  cfg.webAppUrl = url;
+  setCfg(cfg);
+  document.getElementById('waStatus').classList.add('on');
+  setTimeout(()=>document.getElementById('waStatus').classList.remove('on'),3000);
+}
+function loadSetupState() {
+  const cfg = getCfg();
+  if (cfg.sheetId) document.getElementById('sheetIdInput').value = cfg.sheetId;
+  if (cfg.webAppUrl) document.getElementById('webAppUrl').value = cfg.webAppUrl;
+}
+function copyHeaders() {
+  navigator.clipboard.writeText('id\tdept\tcat\ttags\tq\tfamily\tstaff')
+    .then(()=>alert('Headers copied! Paste into Row 1 of your Google Sheet.'))
+    .catch(()=>alert('id | dept | cat | tags | q | family | staff'));
+}
+function copyScript() {
+  const code = document.getElementById('appsScriptCode').textContent;
+  navigator.clipboard.writeText(code)
+    .then(()=>alert('Script copied! Paste into your Google Apps Script editor.'))
+    .catch(()=>alert('Please manually copy the script from the Setup tab.'));
+}
+
+// ══════════════════════════════════════════════════════════
+// SCROLL TOP
+// ══════════════════════════════════════════════════════════
+window.addEventListener('scroll',()=>{
+  document.getElementById('scrollTop').classList.toggle('vis',window.scrollY>400);
+});
+
+// ══════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════
+renderPills();
+renderFAQ();
+loadSetupState();
+const cfg = getCfg();
+if (cfg.sheetId) { syncSheet(); }
+else { setSyncStatus('err','Not configured — open Setup tab'); }
+</script>
+</body>
+</html>
